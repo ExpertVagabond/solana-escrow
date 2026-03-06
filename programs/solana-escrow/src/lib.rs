@@ -34,6 +34,18 @@ pub mod solana_escrow {
             }),
             amount_a, ctx.accounts.mint_a.decimals,
         )?;
+
+        emit!(EscrowCreated {
+            maker: ctx.accounts.maker.key(),
+            taker: optional_taker,
+            mint_a: ctx.accounts.mint_a.key(),
+            mint_b: ctx.accounts.mint_b.key(),
+            amount_a,
+            amount_b,
+            seed: escrow_seed,
+            escrow: ctx.accounts.escrow.key(),
+        });
+
         Ok(())
     }
 
@@ -73,6 +85,15 @@ pub mod solana_escrow {
             destination: ctx.accounts.maker.to_account_info(),
             authority: ctx.accounts.escrow.to_account_info(),
         }, seeds))?;
+
+        emit!(EscrowAccepted {
+            escrow: ctx.accounts.escrow.key(),
+            maker: escrow.maker,
+            taker: ctx.accounts.taker.key(),
+            amount_a: escrow.amount_a,
+            amount_b: escrow.amount_b,
+        });
+
         Ok(())
     }
 
@@ -98,6 +119,13 @@ pub mod solana_escrow {
             destination: ctx.accounts.maker.to_account_info(),
             authority: ctx.accounts.escrow.to_account_info(),
         }, seeds))?;
+
+        emit!(EscrowCancelled {
+            escrow: ctx.accounts.escrow.key(),
+            maker: escrow.maker,
+            amount_a: escrow.amount_a,
+        });
+
         Ok(())
     }
 }
@@ -185,4 +213,36 @@ pub enum EscrowError {
     InvalidAmount,
     #[msg("Only the designated taker can accept this escrow")]
     UnauthorizedTaker,
+}
+
+// ---------------------------------------------------------------------------
+// Events
+// ---------------------------------------------------------------------------
+
+#[event]
+pub struct EscrowCreated {
+    pub maker: Pubkey,
+    pub taker: Option<Pubkey>,
+    pub mint_a: Pubkey,
+    pub mint_b: Pubkey,
+    pub amount_a: u64,
+    pub amount_b: u64,
+    pub seed: u64,
+    pub escrow: Pubkey,
+}
+
+#[event]
+pub struct EscrowAccepted {
+    pub escrow: Pubkey,
+    pub maker: Pubkey,
+    pub taker: Pubkey,
+    pub amount_a: u64,
+    pub amount_b: u64,
+}
+
+#[event]
+pub struct EscrowCancelled {
+    pub escrow: Pubkey,
+    pub maker: Pubkey,
+    pub amount_a: u64,
 }
